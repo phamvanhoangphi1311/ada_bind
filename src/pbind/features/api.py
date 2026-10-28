@@ -14,6 +14,10 @@ needs = "sequence"   uses only ``p.sequence``
 structure = "esmfold"        ``p.pdb`` = the ESMFold file (GEAR blocks)
             "exact_chain_a"  ``p.pdb`` = the exact-sequence chain-A copy (nuclear / small blocks)
 
+optional = True keeps the group OUT of the default build: it is only computed when named explicitly
+(``feature_groups=["PROTT5"]``). Use it for blocks that need weights or an environment this package does not
+depend on, so a plain ``precompute_features.py`` never fails on them.
+
 ``legacy_cache`` maps a block to an original cache file under ``<BASE>/cache/<legacy_subdir>/``: either a per-split
 pickle ``"{split}_....pkl"`` ({pid: array or {block: array}}) or a per-protein file ``".../{split}/{pid}.npz"``
 (one array per block) / ``"{pid}.npy"`` (single block). Proteins found there are imported instead of recomputed.
@@ -70,6 +74,7 @@ class FeatureGroup:
     description: str = ""
     structure: str = "esmfold"  # "esmfold" | "exact_chain_a"
     legacy_subdir: str = "spatial_revamp"  # legacy_cache patterns are relative to <BASE>/cache/<legacy_subdir>
+    optional: bool = False  # not built unless asked for by name: needs weights or an environment we do not require
 
     @property
     def blocks(self) -> tuple[str, ...]:
@@ -87,7 +92,7 @@ FEATURE_GROUPS: dict[str, FeatureGroup] = {}
 
 def feature_group(name: str, columns: Mapping[str, list[str]], *, needs: str = "structure", dtypes=None,
                   legacy_cache=None, description: str = "", structure: str = "esmfold",
-                  legacy_subdir: str = "spatial_revamp"):
+                  legacy_subdir: str = "spatial_revamp", optional: bool = False):
     """Decorator: register ``fn`` as the extractor of feature group ``name``."""
     if needs not in NEEDS:
         raise ValueError(f"needs must be one of {NEEDS}")
@@ -102,7 +107,7 @@ def feature_group(name: str, columns: Mapping[str, list[str]], *, needs: str = "
             raise ValueError(f"{name}: blocks {sorted(clash)} already belong to another group")
         FEATURE_GROUPS[name] = FeatureGroup(name, dict(columns), fn, needs, dict(dtypes or {}),
                                             dict(legacy_cache or {}), description or (fn.__doc__ or "").strip(),
-                                            structure, legacy_subdir)
+                                            structure, legacy_subdir, optional)
         return fn
 
     return deco

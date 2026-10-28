@@ -30,7 +30,7 @@ import pandas as pd
 from ..constants import ALL_LABELS
 from ..data.structures import resolve_predicted_pdb
 from ..utils.cache import load_json, load_pickle_dict, save_json, save_npy, save_npz, save_table
-from . import base_structure, coordination, esm, mechanistic  # noqa: F401  (register the feature groups)
+from . import base_structure, coordination, esm, esmif, mechanistic, prott5  # noqa: F401  (register the groups)
 from .api import FEATURE_GROUPS, BuildOptions, FeatureGroup, Protein, all_blocks, group_of
 
 STORE_VERSION = 1
@@ -245,12 +245,12 @@ def build_feature_store(paths, frames: dict, groups=None, max_residues: int = 10
                         esm_batch_size: int = 8, force: bool = False, legacy: bool = True,
                         require_legacy: bool = False) -> FeatureStore:
     """frames = {split: DataFrame(prot_id, sequence, label columns)} in the row order to store.
-    groups = names in ``FEATURE_GROUPS`` (default: every registered group).
+    groups = names in ``FEATURE_GROUPS`` (default: every registered group except the optional ones).
     force  = rewrite the groups' block files even if present.
     legacy = import proteins found in the original caches (``cache/spatial_revamp/*.pkl``, per-protein NA_/SM_ caches,
              e.g. copied from Drive) instead of recomputing them; ``force=True, legacy=True`` rebuilds the store from them.
     require_legacy = groups that have an original cache must be fully imported from it (exact-reproduction runs)."""
-    groups = list(groups or FEATURE_GROUPS)
+    groups = list(groups) if groups else [n for n, g in FEATURE_GROUPS.items() if not g.optional]
     unknown = [g for g in groups if g not in FEATURE_GROUPS]
     if unknown:
         raise KeyError(f"unknown feature groups {unknown}; registered: {list(FEATURE_GROUPS)}")

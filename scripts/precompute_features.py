@@ -36,7 +36,7 @@ def main():
     ap.add_argument("--esm-batch-size", type=int, default=8)
     ap.add_argument("--store-only", action="store_true", help="only the residue feature store")
     ap.add_argument("--groups", nargs="+", default=None, choices=list(FEATURE_GROUPS),
-                    help="feature groups (default: all registered)")
+                    help="feature groups (default: all registered except the optional ones, PROTT5 / ESMIF_EF)")
     ap.add_argument("--force", action="store_true", help="rewrite the chosen groups even if already in the store")
     ap.add_argument("--no-legacy", action="store_true",
                     help="never import original backend caches (cache/spatial_revamp/*.pkl); always recompute")

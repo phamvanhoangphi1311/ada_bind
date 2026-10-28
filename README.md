@@ -249,7 +249,25 @@ Chữ ký của từng loại xem trong `features/api.py` và `models/registry.p
 
 ### Package dựng lại được tới đâu
 
-Quan trọng với người tiếp nhận: **`src/pbind` không dựng lại được toàn bộ 80 checkpoint của profile `final`.** Feature store có 29 block và **không có `ESMIF` lẫn `PROTT5`** — hai cái này là embedding ngoài, không đăng ký `@feature_group`. Hệ quả:
+Feature store có **31 block**. `PROTT5` và `ESMIF_EF` — hai embedding mà tầng V3 cần — **đã được đăng ký `@feature_group`**, nên `precompute_features.py` tính được chúng:
+
+| block | dim | dtype | tính bằng | cache gốc đọc lại được |
+|---|---|---|---|---|
+| `PROTT5` | 1024 | fp16 | `features/prott5.py`, env chính | `cache/prott5_xl_half_v1/<split>/<pid>.npy` |
+| `ESMIF_EF` | 512 | fp16 | `features/esmif.py`, **cần env fair-esm riêng** | `cache/gear_metal_v3/esmif_esmfold_v1/<split>/esm_if/<pid>.npy` |
+
+Weight tìm theo thứ tự `PBIND_PROTT5_MODEL` / `PBIND_ESMIF_WEIGHTS` → `model_weights/<tên>/` → `data/foundation_models/<tên>/` → tải từ HuggingFace. Giải nén `foundation_models.zip` vào `model_weights/` là chạy được ngay.
+
+Hai block này được đánh dấu **`optional=True`**, nên `precompute_features.py` chạy trần **không** đụng tới chúng — máy không có weight hay không có env fair-esm vẫn dựng được 29 block kia bình thường. Muốn tính thì gọi tên:
+
+```bash
+.venv/bin/python scripts/precompute_features.py --groups PROTT5
+.venv/bin/python scripts/precompute_features.py --groups ESMIF_EF    # chạy trong env fair-esm
+```
+
+Lưu ý có **hai cache ESM-IF khác nhau, không thay thế nhau được**: `ESMIF` (float32, `esmif_v1/`, dùng cho screen metal, gắn qua `backend/gear.py`) và `ESMIF_EF` (float16, `esmif_esmfold_v1/`, đúng cái V3 đã train).
+
+**Nhưng vẫn chưa tự dựng lại được 80 checkpoint**, vì còn thiếu **tầng V3** trong `pipelines/` (bagging 3 seed × 2 kiến trúc, tìm trọng số ensemble cross-fit trên Dev). Hiện trạng:
 
 | member | trọng số trong `final` | dựng lại bằng `src/pbind`? |
 |---|---|---|
@@ -259,11 +277,11 @@ Quan trọng với người tiếp nhận: **`src/pbind` không dựng lại đ�
 | `small/v1`, `small/ms` | 0.2 | có — `run_pipeline.py small --stages hypergraph ms` |
 | `small/{v1,ms}_esmif_prott5_s0..2` | 0.8 | **không** — notebook 10 |
 
-Nói gọn: **80% trọng số của nuclear và small, và toàn bộ metal final, đến từ notebook chứ không từ package.** `run_pipeline.py <task> --stages final_models` **không train** — nó link checkpoint gốc trong `final_model/<task>/` vào thư mục pipeline rồi dùng lại, đúng như docstring của `pipelines/final.py:final_models` ghi.
+Nói gọn: **80% trọng số của nuclear và small, và toàn bộ metal final, hiện vẫn đến từ notebook.** `run_pipeline.py <task> --stages final_models` **không train** — nó link checkpoint gốc trong `final_model/<task>/` vào thư mục pipeline rồi dùng lại, đúng như docstring của `pipelines/final.py:final_models` ghi.
 
-Đường dựng lại được bằng package: `scripts/precompute_features.py` (29 block) → `scripts/train_metal.py` (metal MLP, profile `lite`) hoặc `run_pipeline.py <task> --stages all` (V1/MS của nuclear/small).
+Đường dựng lại được bằng package: `scripts/precompute_features.py` (31 block, gồm cả `PROTT5` và `ESMIF_EF`) → `scripts/train_metal.py` (metal MLP, profile `lite`) hoặc `run_pipeline.py <task> --stages all` (V1/MS của nuclear/small).
 
-Muốn package tự dựng được phần còn lại thì phải đăng ký `ESMIF` và `PROTT5` thành feature block rồi port tầng V3 (bagging 3 seed + tìm trọng số cross-fit) từ notebook 09/10 vào `pipelines/`. Hiện chưa làm. Nguồn gốc từng member được ghi trong `final_model/manifest.json`, khoá `sources`.
+**Việc còn lại để khép kín:** port tầng V3 từ cell V3-4…V3-7 của notebook 09/10 thành một hàm trong `pipelines/`, rồi thêm stage `v3` vào `TASK_STAGES` của `scripts/run_pipeline.py`. Feature đã sẵn sàng; chỉ còn phần điều phối huấn luyện. Nguồn gốc từng member ghi trong `final_model/manifest.json`, khoá `sources`.
 
 ## 6. Notebook Colab
 

@@ -120,8 +120,10 @@ def prepare_context(base, run_version="native_context", models=("MLP",), label_c
             print("[native] mdtraj not installed -> SPATIAL/LOCAL skipped (not used by the final models)")
 
     skip = {"STRUCTURE": not with_structure, "MECH1": not add_mech, "MULTI2": not add_multi, "SEQCTX": not add_seqctx}
-    # every registered group (incl. user-registered ones) unless the caller restricts them
-    groups = list(feature_groups) if feature_groups else [g for g in FS.FEATURE_GROUPS if not skip.get(g, False)]
+    # every registered group (incl. user-registered ones) unless the caller restricts them; optional groups
+    # (PROTT5, ESMIF_EF: need weights or an environment we do not depend on) only when named explicitly
+    groups = list(feature_groups) if feature_groups else [
+        g for g, spec in FS.FEATURE_GROUPS.items() if not skip.get(g, False) and not spec.optional]
     fs = FS.build_feature_store(paths, {split: frames[key] for key, split in SPLITS}, groups, cfg.max_residues,
                                 device, esm_batch_size, require_legacy=require_legacy)
     blocks = [b for g in groups for b in FS.FEATURE_GROUPS[g].blocks]
