@@ -1,0 +1,13 @@
+# pbind.Predictor (single-protein inference in an application). Versions verified with the golden set.
+# Install:  pip install -r requirements-app.txt   then   pip install ./pbind_src   (or: pip install "./pbind_src[app]")
+# torch: CPU build is fine; for an NVIDIA GPU install the CUDA build from https://pytorch.org first.
+numpy>=2          # verified 2.5.4 (the metal checkpoints need numpy >= 2)
+scipy             # verified 1.18.1
+pandas            # verified 3.1.0
+scikit-learn      # verified 1.9.1
+biopython         # verified 1.88
+tqdm              # verified 4.70.1
+torch             # verified 2.14.1
+transformers      # verified 5.20.2 (ESM-2, ProtT5)
+sentencepiece     # verified 0.2.2  (ProtT5 tokenizer)
+protobuf          # verified 7.36.2 (ProtT5 tokenizer on transformers 5)

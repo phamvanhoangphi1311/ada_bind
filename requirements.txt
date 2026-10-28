@@ -1,0 +1,14 @@
+# Same as pyproject.toml; prefer `uv pip install -e ".[all,dev]"`.
+numpy
+pandas
+scipy
+scikit-learn
+biopython
+torch
+tqdm
+transformers      # [esm] ESM-2 650M embeddings (weights downloaded from HuggingFace on first use)
+mdtraj            # [structure] LOCAL block (DSSP / torsions / SASA)
+xgboost           # [xgboost] optional: XGBoost family in the metal screens
+# pykan           # [kan] optional: KAN family in the metal screens
+# The Drive `gear_ultimate` package is NOT required (backend="native" is the default);
+# it is only needed for EVO / graph / old GEAR_ULTIMATE grids via open_workspace(..., backend="gear").

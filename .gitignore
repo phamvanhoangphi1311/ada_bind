@@ -1,0 +1,65 @@
+# This repository is CODE ONLY. Weights and data are downloaded by the user and placed next to it;
+# README section 3 says where. Nothing below is ever committed.
+
+# ------------------------------------------------------------------ python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.ipynb_checkpoints/
+.pytest_cache/
+.venv/
+venv/
+.env
+
+# ------------------------------------------------------------------ model weights
+# Foundation models (ESMFold v1, ESM-2 650M, ProtT5-XL half, ESM-IF1) and the trained checkpoints.
+# Layout and sha256 of each: docs/FOUNDATION_MODELS.md.
+/foundation_models/
+/model_weights/
+/final_model/
+/trained_models/
+*.pt
+*.pth
+*.bin
+*.safetensors
+*.ckpt
+*.onnx
+*.h5
+*.hdf5
+
+# ------------------------------------------------------------------ data, caches, results
+# The project root (data/ by default, or wherever PBIND_BASE points) mirrors the Drive layout.
+/data/
+data_root/
+/feature_store/
+/cache/
+/results/
+/esmFold_pdb_files/
+/experimental_pdb/
+/golden_set/
+/external_benchmarks/
+_local/
+# raw data accidentally placed inside the package (src/pbind/data/ itself is code)
+src/pbind/data/*/
+*.npz
+*.npy
+*.pkl
+*.parquet
+*.csv
+*.tsv
+*.pdb
+*.fasta
+*.fa
+
+# ------------------------------------------------------------------ archives
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.gz
+*.bz2
+*.7z
+# kept on purpose: the original GEAR backend source, for reference only (README section 2).
+# Delete these two lines if you would rather not redistribute third-party source.
+!legacy/gear_ultimate_backend/GEAR_ULTIMATE.zip
+!legacy/gear_ultimate_backend/GEAR_ULTIMATE_OTHER_BINDINGS.zip

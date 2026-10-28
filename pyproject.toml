@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pbind"
+version = "0.1.0"
+description = "Residue-level metal / nucleic-acid / small-molecule binding-site prediction (GEAR lineage)"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=2",   # the metal checkpoints pickle numpy._core arrays
+    "pandas",
+    "scipy",
+    "scikit-learn",
+    "biopython",
+    "torch",
+    "tqdm",
+]
+
+[project.optional-dependencies]
+esm = ["transformers"]        # ESM-2 650M embeddings (weights from HuggingFace on first use)
+structure = ["mdtraj"]        # LOCAL block (DSSP / torsions / SASA)
+xgboost = ["xgboost"]         # XGBoost family in the metal screens
+kan = ["pykan"]               # KAN family in the metal screens
+app = ["transformers", "sentencepiece", "protobuf"]   # single-protein inference (pbind.Predictor)
+all = ["transformers", "mdtraj", "xgboost"]
+dev = ["pytest"]
+
+[tool.setuptools.packages.find]
+where = ["src"]

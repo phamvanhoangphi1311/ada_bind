@@ -1,0 +1,156 @@
+"""Nuclear (nucleic-acid) binding: electrostatic surface-patch reasoning."""
+from ..features.nuclear import V1_DIMS
+from ..training.group_cv import LossConfig
+from ..training.loop import TrainConfig
+from .base import GridExtra, TaskSpec, V2Spec
+
+_ELECTRO_PATCH_HBOND = ["ESM", "ACCESS", "ELEC3D", "NA_SEQELECTRO32", "NA_PATCH3D40", "NA_TOPO12", "NA_HBOND16"]
+
+NUCLEAR = TaskSpec(
+    name="nuclear",
+    label="nuclear_binding",
+    gear_context_version="nuclear_ultimate_v1_context",
+    final_representation="ESM+PATCH_ORGANIZATION",  # LOCKED REPRESENTATION printed by the original notebook
+    original_final={  # NUCLEAR_ULTIMATE_V1_DATA_DRIVEN_PATCH, cell "DEV ENSEMBLE LOCK" + headline table
+        "V1_Dev_mean_AUPRC": 0.5019338304768628, "final_Dev_mean_AUPRC": 0.5089611583669623, "final_w_V1": 0.7,
+        "AUPRC": {("TestSet300", "FINAL_DEV_LOCKED_ENSEMBLE"): 0.432839, ("TestSet300", "V1_Attention"): 0.432288,
+                  ("TestSet300", "MS_Attention"): 0.418940, ("TestSetNew46", "FINAL_DEV_LOCKED_ENSEMBLE"): 0.124501,
+                  ("TestSetNew46", "V1_Attention"): 0.122551, ("TestSetNew46", "MS_Attention"): 0.128783},
+        "final_thresholds": {"dev_oof_mcc_opt": 0.735698, "dev_oof_positive_f1_opt": 0.735698,
+                             "dev_oof_youden_j_opt": 0.019658},
+    },
+    run_root="NUCLEAR_ULTIMATE_V1_DATA_DRIVEN_PATCH",
+    cache_root="nuclear_ultimate_v1",
+    feature_families=("nuclear_v1",),
+    new_blocks=V1_DIMS,
+    audit_blocks=("ESM", "ACCESS", "ELEC3D", "ENV", "SEQMOTIF", "SPATIAL"),
+    family_grid_base={
+        "ESM": ["ESM"],
+        # existing audit-supported controls
+        "ESM+ACCESS": ["ESM", "ACCESS"],
+        "ESM+ELEC3D": ["ESM", "ELEC3D"],
+        "ESM+ENV": ["ESM", "ENV"],
+        "ESM+SEQMOTIF": ["ESM", "SEQMOTIF"],
+        "ESM+Structure": ["ESM", "SPATIAL", "LOCAL"],
+        # nuclear-specific blocks
+        "ESM+NA_SEQELECTRO": ["ESM", "NA_SEQELECTRO32"],
+        "ESM+NA_PATCH3D": ["ESM", "NA_PATCH3D40"],
+        "ESM+NA_HBOND": ["ESM", "NA_HBOND16"],
+        "ESM+NA_TOPO": ["ESM", "NA_TOPO12"],
+        "ESM+NA_PROTCTX": ["ESM", "NA_PROTCTX8"],
+        # aromatic signal must earn its place
+        "ESM+NA_AROM_CTRL": ["ESM", "NA_AROMCTRL8"],
+    },
+    family_extras=(GridExtra("ESM+EVO", "", ("ESM", "EVO")), GridExtra("ESM+ESMIF", "", ("ESM", "ESMIF"))),
+    mechanism_grid_base={
+        "ESM": ["ESM"],
+        "ESM+ACCESS+ELEC3D": ["ESM", "ACCESS", "ELEC3D"],
+        "ESM+BACKBONE_ATTRACTION": ["ESM", "ACCESS", "ELEC3D", "NA_SEQELECTRO32"],
+        "ESM+HBOND_RECOGNITION": ["ESM", "NA_HBOND16"],
+        "ESM+PATCH_ORGANIZATION": ["ESM", "ACCESS", "NA_PATCH3D40", "NA_TOPO12"],
+        "ESM+ELECTRO_PATCH": ["ESM", "ACCESS", "ELEC3D", "NA_SEQELECTRO32", "NA_PATCH3D40", "NA_TOPO12"],
+        "ESM+ELECTRO_PATCH_HBOND": _ELECTRO_PATCH_HBOND,
+        "ESM+ELECTRO_PATCH_HBOND+AROMCTRL": [*_ELECTRO_PATCH_HBOND, "NA_AROMCTRL8"],
+    },
+    mechanism_extras=(
+        GridExtra("ESM+ELECTRO_PATCH_HBOND+EVO", "ESM+ELECTRO_PATCH_HBOND", ("EVO",)),
+        GridExtra("ESM+ELECTRO_PATCH_HBOND+ESMIF", "ESM+ELECTRO_PATCH_HBOND", ("ESMIF",)),
+        GridExtra("ESM+ELECTRO_PATCH_HBOND+EVO+ESMIF", "ESM+ELECTRO_PATCH_HBOND", ("EVO", "ESMIF")),
+    ),
+    run_version_family="nuclear_v1_01_family_mlp",
+    run_version_mechanism="nuclear_v1_02_mechanism_combo_mlp",
+    modality_groups=(
+        ("ESM", ["ESM"]),
+        ("ELECTRO", ["ACCESS", "ELEC3D", "NA_SEQELECTRO32"]),
+        ("PATCH", ["NA_PATCH3D40", "NA_TOPO12"]),
+        ("CHEM", ["NA_HBOND16", "NA_AROMCTRL8"]),
+        ("BIO", ["EVO", "SEQMOTIF", "NA_PROTCTX8", "SPATIAL", "LOCAL", "ESMIF"]),
+    ),
+    residual_key="PATCH",
+    residual_prefix="patch",
+    residual_arch="PatchResidualFusion",
+    moe_arch="LatentNAExpertMoE",
+    group="patch",
+    group_family="PATCH_HYPERGRAPH",
+    bank_v1="nuclear_patch_v1",
+    bank_ms="nuclear_patch_ms",
+    hypergraphs={
+        "NA_PatchHG_Gated": {"mode": "gated", "moe": False},
+        "NA_PatchHG_Attention": {"mode": "attention", "moe": False},
+        "NA_PatchHG_GatedMoE": {"mode": "gated", "moe": True, "experts": 4},
+    },
+    v1_hg="NA_PatchHG_Attention",
+    ms_hg="NA_PatchHG_Attention_MS",
+    ms_run_root="NUCLEAR_V1_ATTENTION_V2_MULTISCALE_PATCH",
+    ensemble_root="NUCLEAR_FINAL_V1_MS_ENSEMBLE",
+    paper_root="NUCLEAR_FINAL_PAPER_READY",
+    group_state_dir="patch_states",
+    local_train=TrainConfig(batch=4096, epochs=45, patience=7, lr=3e-4, weight_decay=1e-4, seed_offset=0),
+    group_train=TrainConfig(batch=4, epochs=32, patience=6, lr=3e-4, weight_decay=1e-4, seed_offset=100),
+    prior_runs=(
+        "ultimate_other_generic_core_v1", "ultimate_other_standardized13_transfer_v1",
+        "ultimate_other_metal_mechanistic_transfer_v1", "ultimate_other_evo_full_v1",
+        "ultimate_other_generic_graph_v1", "ultimate_other_evo_graph_v1",
+    ),
+    mechanism_report=(
+        "ESM+ACCESS+ELEC3D", "ESM+BACKBONE_ATTRACTION", "ESM+PATCH_ORGANIZATION", "ESM+ELECTRO_PATCH",
+        "ESM+ELECTRO_PATCH_HBOND", "ESM+ELECTRO_PATCH_HBOND+AROMCTRL", "ESM+ELECTRO_PATCH_HBOND+EVO",
+    ),
+    v2=V2Spec(
+        run_root="NUCLEAR_V2_SELECTIVE_MULTISCALE",
+        code_version="nuclear_v2_selective_multiscale_r1",
+        bank="nuclear_patch_ms",
+        variants={
+            "NoPatch_BCE": {"mode": "none", "hardneg": False},
+            "NoPatch_HardNeg": {"mode": "none", "hardneg": True},
+            "Patch_BCE": {"mode": "cross", "hardneg": False},
+            "Patch_HardNeg": {"mode": "cross", "hardneg": True},
+        },
+        complexity=("NoPatch_BCE", "NoPatch_HardNeg", "Patch_BCE", "Patch_HardNeg"),
+        ablation=(
+            ("Hard-negative loss without patches", "NoPatch_HardNeg", "NoPatch_BCE"),
+            ("Patch reasoning under BCE", "Patch_BCE", "NoPatch_BCE"),
+            ("Patch reasoning under HardNeg", "Patch_HardNeg", "NoPatch_HardNeg"),
+            ("Hard-negative loss with patches", "Patch_HardNeg", "Patch_BCE"),
+        ),
+        loss=LossConfig(kind="v2", lam=0.20, margin=0.50, k_min=4, k_max=32),
+        train=TrainConfig(batch=4, epochs=36, patience=6, lr=3e-4, weight_decay=1e-4, seed_offset=700),
+        relock_grid={
+            "V2_ESM": ["ESM"],
+            "V2_V1_PATCHORG": ["ESM", "ACCESS", "NA_PATCH3D40", "NA_TOPO12"],
+            "V2_ESM_SURFTOPO": ["ESM", "NA_SURFTOPO16"],
+            "V2_PATCHORG_SURFTOPO": ["ESM", "ACCESS", "NA_PATCH3D40", "NA_TOPO12", "NA_SURFTOPO16"],
+            "V2_PATCHORG_SURFTOPO_ELEC": ["ESM", "ACCESS", "ELEC3D", "NA_PATCH3D40", "NA_TOPO12", "NA_SURFTOPO16"],
+        },
+        relock_run_version="nuclear_v2_01_surftopo_rep",
+        relock_feature_family="nuclear_surftopo16",
+        modality_groups=(
+            ("ESM", ["ESM"]),
+            ("SURFACE", ["ACCESS", "NA_SURFTOPO16"]),
+            ("PATCH_LOCAL", ["NA_PATCH3D40", "NA_TOPO12"]),
+            ("ELECTRO", ["ELEC3D", "NA_SEQELECTRO32"]),
+            ("CHEM", ["NA_HBOND16"]),
+        ),
+    ),
+    xtask={
+        "addin_root": "ADDIN_STANDALONE_NUCLEAR_EVO_XTASK",
+        "export_file": "NUCLEAR_DEV_OOF.csv.gz",
+        "counterpart_file": "SMALL_DEV_OOF.csv.gz",
+        "own_label_col": "y_nuclear",
+        "counterpart_label_col": "y_small",
+        "xtask_block": "XTASK_SMALL2_CLEAN",
+        "base_blocks": ["ESM", "ACCESS", "NA_PATCH3D40", "NA_TOPO12"],
+        "base_name": "N_BASE_PATCH_ORGANIZATION_CLEANV3",
+        "names": {
+            "xtask": "N_BASE_PLUS_XTASK_SMALL2_CLEANV3",
+            "evo": "N_BASE_PLUS_EVO_CLEANV3",
+            "evo_res": "N_BASE_PLUS_EVO_ACCESS_RES_CLEANV3",
+            "evo_xtask": "N_BASE_PLUS_EVO_XTASK_SMALL2_CLEANV3",
+        },
+        "run_version": "standalone_nuclear_evo_xtask_screen_CLEAN_V3_20260914",
+        # matched PatchHG(+EVO48) add-in (FINAL_PATCHHG_EVO48)
+        "evo_hg_root": ("ADDIN_STANDALONE_NUCLEAR_EVO_XTASK", "FINAL_PATCHHG_EVO48"),
+        "evo_hg_base_name": "PATCHHG_BASE_RECHECK_FINALV1",
+        "evo_hg_evo_name": "PATCHHG_EVO48_FINALV1",
+    },
+)
