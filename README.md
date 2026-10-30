@@ -103,6 +103,8 @@ uv pip install --python .venv/bin/python -e ".[all,dev]"
 
 Extra: `esm` (transformers), `structure` (mdtraj), `xgboost`, `kan` (pykan); `all` = 3 cái đầu. XGBoost/KAN chỉ dùng trong screen metal, model final không cần. Máy này PyPI rất chậm: cài `-e ".[esm,structure,dev]" --offline` từ cache của uv (xgboost chưa có trong cache).
 
+**Môi trường conda cho thực nghiệm và vẽ hình:** `AdaBind` (`~/miniconda3/envs/AdaBind`, Python 3.11: numpy, pandas, scipy, matplotlib, biopython, pymol-open-source). Mọi code chạy thực nghiệm hoặc phát triển thêm dùng env này (`conda activate AdaBind`); cần torch/transformers thì cài thêm vào chính env này, không tạo env khác.
+
 Data tải từ Drive `Protein-binding-Phi/` vào `data/`, **giữ nguyên layout**. Thư mục gốc được chọn theo thứ tự: `base=` → biến `PBIND_BASE` → `<repo>/data/` → Drive. Chép vào `data/` là xong, không cần cấu hình gì.
 
 ```text

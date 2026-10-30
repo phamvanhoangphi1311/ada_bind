@@ -10,6 +10,10 @@ __pycache__/
 .venv/
 venv/
 .env
+.agents/
+.claude/
+.cursor/
+research_notes/
 
 # ------------------------------------------------------------------ model weights
 # Foundation models (ESMFold v1, ESM-2 650M, ProtT5-XL half, ESM-IF1) and the trained checkpoints.
@@ -39,6 +43,7 @@ data_root/
 /golden_set/
 /external_benchmarks/
 _local/
+reports/
 # raw data accidentally placed inside the package (src/pbind/data/ itself is code)
 src/pbind/data/*/
 *.npz
@@ -63,3 +68,9 @@ src/pbind/data/*/
 # Delete these two lines if you would rather not redistribute third-party source.
 !legacy/gear_ultimate_backend/GEAR_ULTIMATE.zip
 !legacy/gear_ultimate_backend/GEAR_ULTIMATE_OTHER_BINDINGS.zip
+
+# ------------------------------------------------------------------ overleaf manuscript
+# Nested git clone. Source of truth is Overleaf Git, not this repo.
+/overleaf/
+overleaf_git_token.txt
+.cursor/mcp.json
